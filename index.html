@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <title>Seat Finder</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300&display=swap" rel="stylesheet">
 
 <style>
   body {
@@ -12,15 +15,63 @@
     background: #f5f5f5;
   }
 
+  /* 🔥 SPLASH SCREEN */
+  #splash {
+    position: fixed;
+    inset: 0;
+    background: #111;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .title {
+    font-family: 'Cormorant SC', serif;
+    font-weight: 300;
+    font-size: 40px;
+    letter-spacing: 2px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 1.5s ease forwards;
+  }
+
+  @keyframes fadeInUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* fade out splash */
+  .fade-out {
+    animation: fadeOut 0.8s ease forwards;
+  }
+
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  /* MAIN UI */
   .container {
     max-width: 420px;
     margin: auto;
     padding: 20px;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+
+  .container.show {
+    opacity: 1;
   }
 
   h1 {
     text-align: center;
-    font-size: 24px;
+    font-size: 22px;
     margin-bottom: 20px;
   }
 
@@ -30,7 +81,6 @@
     font-size: 18px;
     border-radius: 12px;
     border: 1px solid #ccc;
-    box-sizing: border-box;
   }
 
   .list {
@@ -45,11 +95,6 @@
   .item {
     padding: 14px;
     border-bottom: 1px solid #eee;
-    font-size: 16px;
-  }
-
-  .item:last-child {
-    border-bottom: none;
   }
 
   .item:active {
@@ -75,22 +120,27 @@
 
 <body>
 
-<div class="container">
+<!-- 🔥 Splash -->
+<div id="splash">
+  <div class="title">Conversation Cafe</div>
+</div>
+
+<!-- MAIN -->
+<div class="container" id="main">
   <h1>Find Your Seat</h1>
-
-  <input 
-    id="nameInput"
-    placeholder="Start typing your name..."
-    autocomplete="off"
-  >
-
+  <input id="nameInput" placeholder="Start typing your name..." autocomplete="off">
   <div id="suggestions" class="list"></div>
-
   <div id="result"></div>
 </div>
 
 <script>
-// 🔧 your data (same as before)
+// ⏱️ Splash timing
+setTimeout(() => {
+  document.getElementById("splash").classList.add("fade-out");
+  document.getElementById("main").classList.add("show");
+}, 2000);
+
+// your people data stays the same (shortened here for clarity)
 const people = [
   { name: "Aaron Levin", seat: "Table 38" },
   { name: "Aaron Michels", seat: "Table 37" },
@@ -247,7 +297,7 @@ const people = [
   { name: "Zara Levick", seat: "Table 36" }
 ];
 
-// --- helpers ---
+// helpers
 function normalize(s) {
   return s.toLowerCase().replace(/\s+/g, " ").trim();
 }
@@ -273,35 +323,27 @@ function levenshtein(a, b) {
 }
 
 function similarity(a, b) {
-  const dist = levenshtein(a, b);
-  return 1 - dist / Math.max(a.length, b.length);
+  return 1 - levenshtein(a, b) / Math.max(a.length, b.length);
 }
 
-// --- live search ---
+// live search
 const input = document.getElementById("nameInput");
 const suggestions = document.getElementById("suggestions");
 const result = document.getElementById("result");
 
 input.addEventListener("input", () => {
   const value = normalize(input.value);
-
-  if (!value) {
-    suggestions.innerHTML = "";
-    return;
-  }
+  if (!value) return suggestions.innerHTML = "";
 
   const scored = people.map(p => {
-    const name = normalize(p.name);
-    let score = similarity(value, name);
-    if (name.includes(value)) score += 0.2;
+    let score = similarity(value, normalize(p.name));
+    if (p.name.toLowerCase().includes(value)) score += 0.2;
     return { ...p, score };
   });
 
-  scored.sort((a, b) => b.score - a.score);
+  scored.sort((a,b) => b.score - a.score);
 
-  const top = scored.slice(0, 5);
-
-  suggestions.innerHTML = top.map(p => `
+  suggestions.innerHTML = scored.slice(0,5).map(p => `
     <div class="item" onclick="selectPerson('${p.name}', '${p.seat}')">
       ${p.name}
     </div>
@@ -318,8 +360,8 @@ function selectPerson(name, seat) {
   `;
 }
 
-// autofocus
-window.onload = () => input.focus();
+// autofocus after splash
+setTimeout(() => input.focus(), 2200);
 </script>
 
 </body>
